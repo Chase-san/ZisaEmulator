@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -59,7 +63,7 @@ void ui_panel_memory(struct dbg_ui_panel_t* panel, struct dbg_ui_t* dctx, dbg_t*
                 char* dst = (j < 8) ? &hex_left[index] : &hex_right[index];
                 dbg_ui_byte_to_hex(byte, dst, ' ');
                 /* Check if the character is printable */
-                ascii[j] = isprint((char) byte) ? byte : '.';
+                ascii[j] = isprint((unsigned char) byte) ? byte : '.';
             }
             /* The three buffers are already NULL-terminated */
 

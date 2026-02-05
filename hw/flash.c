@@ -276,7 +276,7 @@ static int flash_is_init_path(const char *s) {
         if (c == '\0') {
             return 1;
         }
-        if (!isprint(c)) {
+        if (!isprint((unsigned char) c)) {
             return 0;
         }
     }
