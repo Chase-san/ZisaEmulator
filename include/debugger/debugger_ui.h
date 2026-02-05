@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -9,7 +13,6 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "debugger/debugger.h"
 #include "ui/raylib-nuklear.h"
 #include "utils/config.h"
 /* Workaround to have access to more info of the VRAM */

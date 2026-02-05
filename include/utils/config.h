@@ -1,18 +1,19 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
-
 
 #pragma once
 
-#include <stdio.h>
-#include <getopt.h>
 #include <stdbool.h>
-#include "rini.h"
-#include "raylib.h"
 
+#include "raylib.h"
+#include "rini.h"
 
 typedef struct {
     int width;
@@ -25,17 +26,17 @@ typedef struct {
 
 typedef enum {
     DEBUGGER_STATE_ARG_DISABLE = -1,
-    DEBUGGER_STATE_DISABLED    = 0,
-    DEBUGGER_STATE_CONFIG      = 1,
-    DEBUGGER_STATE_ARG         = 2,
-    DEBUGGER_STATE_USER        = 3,
+    DEBUGGER_STATE_DISABLED = 0,
+    DEBUGGER_STATE_CONFIG = 1,
+    DEBUGGER_STATE_ARG = 2,
+    DEBUGGER_STATE_USER = 3,
 } debugger_state_t;
 
 typedef struct {
     debugger_state_t enabled;
     bool config_enabled;
 
-    bool keyboard_passthru; // whether to pass all keypresses through to emulator
+    bool keyboard_passthru;  // whether to pass all keypresses through to emulator
     bool hex_upper;
 
     int width;
@@ -45,15 +46,14 @@ typedef struct {
 } config_debugger_t;
 
 typedef struct {
-    const char* config_path;
-    const char* rom_filename;
-    const char* eeprom_filename;
-    const char* tf_filename;
-    const char* uprog_filename;
-    const char* cf_filename;
-    const char* hostfs_path;
-    const char* map_file;
-    const char* breakpoints;
+    const char *config_path;
+    const char *rom_filename;
+    const char *eeprom_filename;
+    const char *tf_filename;
+    const char *uprog_filename;
+    const char *cf_filename;
+    const char *map_file;
+    const char *breakpoints;
     bool headless;
     bool config_save;
     bool verbose;
@@ -62,7 +62,7 @@ typedef struct {
 
 typedef struct {
     config_debugger_t debugger;
-    config_window_t window; // main window options
+    config_window_t window;  // main window options
     config_arguments_t arguments;
     rini_config ini;
 } config_t;
@@ -78,12 +78,12 @@ void config_debug(void);
 /**
  * @brief Parse command args
  */
-int parse_command_args(int argc, char* argv[]);
+int parse_command_args(int argc, char *argv[]);
 
 /**
  * @brief Parse the INI Config File
  */
-void config_parse_file(const char* file);
+void config_parse_file(const char *file);
 
 /**
  * @brief Free/unload the rini_config
@@ -106,7 +106,7 @@ int config_get(const char *key, int defaultValue);
  * @param key The key to retrieve
  * @param defaultValue Default value if key not set
  */
-const char* config_get_text(const char *key, const char *defaultValue);
+const char *config_get_text(const char *key, const char *defaultValue);
 
 /**
  * @brief Set a config int value

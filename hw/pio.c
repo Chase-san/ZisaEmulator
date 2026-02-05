@@ -1,24 +1,25 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
+#include "hw/pio.h"
 
 #include <stdint.h>
-#include <stdlib.h>
 
-#include "hw/zeal.h"
-#include "hw/pio.h"
-#include "hw/z80.h"
 #include "hw/device.h"
+#include "hw/z80.h"
+#include "hw/zeal.h"
 
-
-static uint8_t io_read(device_t* dev, uint32_t addr)
-{
+static uint8_t io_read(device_t *dev, uint32_t addr) {
     pio_t *pio = (pio_t *)dev;
-    port_t* hw_port = (addr & 1) == 0 ? &pio->port_a : &pio->port_b;
-    uint8_t ctrl    = (addr & 2) != 0;
+    port_t *hw_port = (addr & 1) == 0 ? &pio->port_a : &pio->port_b;
+    uint8_t ctrl = (addr & 2) != 0;
     // uint8_t data    = !ctrl;
 
     if (ctrl) {
@@ -27,16 +28,15 @@ static uint8_t io_read(device_t* dev, uint32_t addr)
     return hw_port->state;
 }
 
-static void io_write(device_t* dev, uint32_t addr, uint8_t value)
-{
+static void io_write(device_t *dev, uint32_t addr, uint8_t value) {
     pio_t *pio = (pio_t *)dev;
-    port_t* hw_port = (addr & 1) == 0 ? &pio->port_a : &pio->port_b;
-    uint8_t ctrl    = (addr & 2) != 0;
-    uint8_t data    = !ctrl;
+    port_t *hw_port = (addr & 1) == 0 ? &pio->port_a : &pio->port_b;
+    uint8_t ctrl = (addr & 2) != 0;
+    uint8_t data = !ctrl;
 
     if (ctrl && hw_port->dir_follows) {
         hw_port->dir_follows = 0;
-        hw_port->dir         = value & 0xff;
+        hw_port->dir = value & 0xff;
     } else if (ctrl && hw_port->mask_follows) {
         hw_port->mask_follows = 0;
         /* Save the mask */
@@ -44,14 +44,14 @@ static void io_write(device_t* dev, uint32_t addr, uint8_t value)
     } else if (ctrl && (value & 0xf) == 0xf) {
         /* Word Set */
         /* Upper two bits define the mode to operate in */
-        hw_port->mode        = (value >> 6) & 0x3;
+        hw_port->mode = (value >> 6) & 0x3;
         hw_port->dir_follows = (hw_port->mode == MODE_BITCTRL);
     } else if (ctrl && (value & 0xf) == 7) {
         /* Interrupt Control Word */
         hw_port->mask_follows = BIT(value, 4) == 1;
-        hw_port->active_high  = BIT(value, 5) == 1;
-        hw_port->and_op       = BIT(value, 6) == 1;
-        hw_port->int_enable   = BIT(value, 7) == 1;
+        hw_port->active_high = BIT(value, 5) == 1;
+        hw_port->and_op = BIT(value, 6) == 1;
+        hw_port->int_enable = BIT(value, 7) == 1;
         /* As stated in the PIO User manual, if mask follows is set, the interrupt requests are
          * reset, in our case, let's just reset the mask we have */
         if (hw_port->mask_follows) {
@@ -77,10 +77,10 @@ static void io_write(device_t* dev, uint32_t addr, uint8_t value)
         }
 
         for (uint8_t pin = 0; pin < 8; pin++) {
-            listener_t* listener               = &hw_port->listeners[pin];
-            listener_change_t* listener_change = &hw_port->listeners_change[pin];
-            uint8_t bit                        = BIT(hw_port->state, pin);
-            uint8_t formerBit                  = BIT(former_state, pin);
+            listener_t *listener = &hw_port->listeners[pin];
+            listener_change_t *listener_change = &hw_port->listeners_change[pin];
+            uint8_t bit = BIT(hw_port->state, pin);
+            uint8_t formerBit = BIT(former_state, pin);
             if (listener->callback != NULL && BIT(hw_port->dir, pin) == DIR_OUTPUT) {
                 uint8_t transition = formerBit != bit;
                 /* Parameters(read, pin, value, transition) */
@@ -94,42 +94,40 @@ static void io_write(device_t* dev, uint32_t addr, uint8_t value)
     }
 }
 
-
-int pio_init(void* machine, pio_t* pio)
-{
+int pio_init(void *machine, pio_t *pio) {
     pio->port_a = (port_t){
-        .port         = 'a',
-        .mode         = MODE_OUTPUT,
-        .state        = 0xf0,
-        .dir          = 0xff,
-        .int_vector   = 0,
-        .int_enable   = 0,
-        .int_mask     = 0,
-        .and_op       = 1,
-        .active_high  = 0,
+        .port = 'a',
+        .mode = MODE_OUTPUT,
+        .state = 0xf0,
+        .dir = 0xff,
+        .int_vector = 0,
+        .int_enable = 0,
+        .int_mask = 0,
+        .and_op = 1,
+        .active_high = 0,
         .mask_follows = 0,
-        .dir_follows  = 0,
+        .dir_follows = 0,
     };
 
     pio->port_b = (port_t){
-        .port         = 'b',
-        .mode         = MODE_OUTPUT,
-        .state        = 0xf0,
-        .dir          = 0xff,
-        .int_vector   = 0,
-        .int_enable   = 0,
-        .int_mask     = 0,
-        .and_op       = 1,
-        .active_high  = 0,
+        .port = 'b',
+        .mode = MODE_OUTPUT,
+        .state = 0xf0,
+        .dir = 0xff,
+        .int_vector = 0,
+        .int_enable = 0,
+        .int_mask = 0,
+        .and_op = 1,
+        .active_high = 0,
         .mask_follows = 0,
-        .dir_follows  = 0,
+        .dir_follows = 0,
     };
 
     for (uint8_t i = 0; i < PIO_PIN_COUNT; i++) {
-        pio->port_a.listeners[i]        = (listener_t) { 0 };
-        pio->port_b.listeners[i]        = (listener_t) { 0 };
-        pio->port_a.listeners_change[i] = (listener_change_t) { 0 };
-        pio->port_b.listeners_change[i] = (listener_change_t) { 0 };
+        pio->port_a.listeners[i] = (listener_t){0};
+        pio->port_b.listeners[i] = (listener_t){0};
+        pio->port_a.listeners_change[i] = (listener_change_t){0};
+        pio->port_b.listeners_change[i] = (listener_change_t){0};
     }
 
     pio->size = 0x10;
@@ -142,8 +140,7 @@ int pio_init(void* machine, pio_t* pio)
 /**
  * Check if the given pin (with the given new value) should trigger an interrupt, when mode is BITCTRL
  */
-uint8_t pio_check_bitctrl_interrupt(port_t* port, uint8_t pin, uint8_t value)
-{
+uint8_t pio_check_bitctrl_interrupt(port_t *port, uint8_t pin, uint8_t value) {
     uint8_t activemask = port->active_high ? 0xff : 0;
 
     /* Check that BITCTRL mode is ON */
@@ -161,8 +158,7 @@ uint8_t pio_check_bitctrl_interrupt(port_t* port, uint8_t pin, uint8_t value)
 /**
  * Set the pin of a port to a certain value: 0 or 1.
  */
-static void pio_set_pin(port_t* port, uint8_t pin, uint8_t value, z80* cpu)
-{
+static void pio_set_pin(port_t *port, uint8_t pin, uint8_t value, z80 *cpu) {
     uint8_t previous_state = port->state;
     if (value == 0) {
         port->state &= (~(1 << pin)) & 0xff;
@@ -183,95 +179,79 @@ static void pio_set_pin(port_t* port, uint8_t pin, uint8_t value, z80* cpu)
  * Get the pin of a port.
  * Returns 0 or 1.
  */
-static inline uint8_t pio_get_pin(port_t* port, uint8_t pin)
-{
+static inline uint8_t pio_get_pin(port_t *port, uint8_t pin) {
     return BIT(port->state, pin);
 }
 
-void pio_set_a_pin(pio_t *pio, uint8_t pin, uint8_t value)
-{
-    zeal_t *machine = (zeal_t*) (pio->machine);
+void pio_set_a_pin(pio_t *pio, uint8_t pin, uint8_t value) {
+    zeal_t *machine = (zeal_t *)(pio->machine);
     pio_set_pin(&pio->port_a, pin, value, &machine->cpu);
 }
 
-uint8_t pio_get_a_pin(pio_t *pio, uint8_t pin)
-{
+uint8_t pio_get_a_pin(pio_t *pio, uint8_t pin) {
     return pio_get_pin(&pio->port_a, pin);
 }
 
-void pio_set_b_pin(pio_t *pio, uint8_t pin, uint8_t value)
-{
-    zeal_t *machine = (zeal_t*) (pio->machine);
+void pio_set_b_pin(pio_t *pio, uint8_t pin, uint8_t value) {
+    zeal_t *machine = (zeal_t *)(pio->machine);
     pio_set_pin(&pio->port_b, pin, value, &machine->cpu);
 }
 
-uint8_t pio_get_b_pin(pio_t *pio, uint8_t pin)
-{
+uint8_t pio_get_b_pin(pio_t *pio, uint8_t pin) {
     return pio_get_pin(&pio->port_b, pin);
 }
 
-static void pio_listen_pin(port_t* port, uint8_t pin, pio_listener_callback cb, void* arg)
-{
+static void pio_listen_pin(port_t *port, uint8_t pin, pio_listener_callback cb, void *arg) {
     if (/*pin < 0 || */ pin > 7 || (cb != NULL && port->listeners[pin].callback)) {
         return;
     }
-    port->listeners[pin] = (listener_t) {
+    port->listeners[pin] = (listener_t){
         .callback = cb,
         .arg = arg,
     };
 }
 
-void pio_listen_pin_change(port_t* port, uint8_t pin, uint8_t state, pio_listener_change_callback cb)
-{
+void pio_listen_pin_change(port_t *port, uint8_t pin, uint8_t state, pio_listener_change_callback cb) {
     if (/*pin < 0 || */ pin > 7 || (cb != NULL && port->listeners_change[pin].callback)) {
         return;
     }
     port->listeners_change[pin].callback = cb;
-    port->listeners_change[pin].state    = state;
+    port->listeners_change[pin].state = state;
 }
 
-void pio_listen_a_pin(pio_t *pio, uint8_t pin, pio_listener_callback cb, void* arg)
-{
+void pio_listen_a_pin(pio_t *pio, uint8_t pin, pio_listener_callback cb, void *arg) {
     pio_listen_pin(&pio->port_a, pin, cb, arg);
 }
 
-void pio_listen_b_pin(pio_t *pio, uint8_t pin, pio_listener_callback cb, void* arg)
-{
+void pio_listen_b_pin(pio_t *pio, uint8_t pin, pio_listener_callback cb, void *arg) {
     pio_listen_pin(&pio->port_b, pin, cb, arg);
 }
 
-void pio_listen_a_pin_change(pio_t *pio, uint8_t pin, uint8_t state, pio_listener_change_callback cb)
-{
+void pio_listen_a_pin_change(pio_t *pio, uint8_t pin, uint8_t state, pio_listener_change_callback cb) {
     pio_listen_pin_change(&pio->port_a, pin, state, cb);
 }
 
-void pio_listen_b_pin_change(pio_t *pio, uint8_t pin, uint8_t state, pio_listener_change_callback cb)
-{
+void pio_listen_b_pin_change(pio_t *pio, uint8_t pin, uint8_t state, pio_listener_change_callback cb) {
     pio_listen_pin_change(&pio->port_b, pin, state, cb);
 }
 
-void pio_unlisten_pin(port_t* port, uint8_t pin)
-{
+void pio_unlisten_pin(port_t *port, uint8_t pin) {
     port->listeners_change[pin].callback = NULL;
     port->listeners_change[pin].state = 0;
 }
 
-void pio_unlisten_a_pin(pio_t *pio, uint8_t pin)
-{
+void pio_unlisten_a_pin(pio_t *pio, uint8_t pin) {
     pio_listen_pin(&pio->port_a, pin, NULL, NULL);
 }
 
-void pio_unlisten_b_pin(pio_t *pio, uint8_t pin)
-{
+void pio_unlisten_b_pin(pio_t *pio, uint8_t pin) {
     pio_listen_pin(&pio->port_b, pin, NULL, NULL);
 }
 
-void pio_unlisten_a_pin_change(pio_t *pio, uint8_t pin)
-{
+void pio_unlisten_a_pin_change(pio_t *pio, uint8_t pin) {
     pio_listen_pin_change(&pio->port_a, pin, 0, NULL);
 }
 
-void pio_unlisten_b_pin_change(pio_t *pio, uint8_t pin)
-{
+void pio_unlisten_b_pin_change(pio_t *pio, uint8_t pin) {
     pio_listen_pin_change(&pio->port_b, pin, 0, NULL);
 }

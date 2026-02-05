@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -10,7 +14,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <hw/device.h>
-
+#include <stdio.h>
 
 typedef enum {
      IDE_STAT_BUSY = 7,
@@ -78,7 +82,7 @@ typedef struct {
     size_t      size; // in bytes
 
     // CompactFlash specific
-    int fd;
+    FILE *fd;
     char *file_name;
     size_t total_sectors;
     long data_ofs;

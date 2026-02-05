@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -10,7 +14,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "hw/device.h"
-#include "debugger/debugger_types.h"
 #include "hw/zvb/zvb_font.h"
 #include "hw/zvb/zvb_palette.h"
 #include "hw/zvb/zvb_tilemap.h"
@@ -21,6 +24,10 @@
 #include "hw/zvb/zvb_crc32.h"
 #include "hw/zvb/zvb_sound.h"
 #include "hw/zvb/zvb_dma.h"
+
+#ifdef CONFIG_ENABLE_DEBUGGER
+#include "debugger/debugger_types.h"
+#endif
 
 /**
  * @file Emulation for the Zeal 8-bit VideoBoard
@@ -202,7 +209,9 @@ typedef struct {
     /* Internally used to make the shader work on the whole screen */
     zvb_shader_t     shaders[SHADERS_COUNT];
     RenderTexture    tex_dummy;
+#ifdef CONFIG_ENABLE_DEBUGGER
     RenderTexture    debug_tex[DBG_VIEW_TOTAL];
+#endif
 
     /* Internal values */
     zvb_status_t     status;
@@ -279,12 +288,11 @@ void zvb_force_render(zvb_t* zvb);
  */
 void zvb_deinit(zvb_t* zvb);
 
-
+#ifdef CONFIG_ENABLE_DEBUGGER
 /**
  * @brief Render the current VRAM state in the debug textures, must be called after `render` function
  */
 void zvb_render_debug_textures(zvb_t* zvb);
-
 
 /**
  * @brief Get a pointer to the array of VRAM debug textures
@@ -296,3 +304,4 @@ static inline const RenderTexture* zvb_get_debug_textures(zvb_t* zvb, int* count
     }
     return zvb->debug_tex;
 }
+#endif

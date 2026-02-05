@@ -1,43 +1,40 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
-
+#include <ctype.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
-#include <limits.h>
-#include <ctype.h>
-/* Required for file operations */
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 /* **** */
-#include "utils/helpers.h"
 #include "hw/flash.h"
-#include "utils/paths.h"
+#include "utils/helpers.h"
 #include "utils/log.h"
-
+#include "utils/paths.h"
 
 /**
  * @brief Romdisk header and first entry
  */
 typedef struct {
     uint16_t entry;
-    char     name[16];
+    char name[16];
     uint32_t size;
     uint32_t offset;
-    uint8_t  year[2];
-    uint8_t  month;
-    uint8_t  day;
-    uint8_t  date;
-    uint8_t  hours;
-    uint8_t  minutes;
-    uint8_t  seconds;
+    uint8_t year[2];
+    uint8_t month;
+    uint8_t day;
+    uint8_t date;
+    uint8_t hours;
+    uint8_t minutes;
+    uint8_t seconds;
 } __attribute__((packed)) romdisk_entry_t;
 
 typedef enum {
@@ -46,9 +43,9 @@ typedef enum {
     /* State reached after *(0x5555)=0xAA operation is detected.
      * This operation is common to all erase, software id and write commands */
     STATE_SPECIAL_STEP0,
-    STATE_SPECIAL_STEP1,    /* Similarly, with *(0x2AAAA)=0x55 */
-    STATE_SPECIAL_STEP2,    /* Similarly, only relevant for erase command */
-    STATE_SPECIAL_STEP3,    /* Similarly, only relevant for erase command */
+    STATE_SPECIAL_STEP1, /* Similarly, with *(0x2AAAA)=0x55 */
+    STATE_SPECIAL_STEP2, /* Similarly, only relevant for erase command */
+    STATE_SPECIAL_STEP3, /* Similarly, only relevant for erase command */
     /* In this state, writing a byte is allowed, then a delay is applied */
     STATE_PERFORM_WRITE,
     /* During this state, the flash is being written */
@@ -59,9 +56,8 @@ typedef enum {
     STATE_PERFORM_ERASE_DELAY,
 } fsm_state_t;
 
-static uint8_t flash_read(device_t* dev, uint32_t addr)
-{
-    flash_t* f = (flash_t*) dev;
+static uint8_t flash_read(device_t *dev, uint32_t addr) {
+    flash_t *f = (flash_t *)dev;
 
     switch (f->state) {
         case STATE_PERFORM_ERASE_DELAY:
@@ -78,8 +74,10 @@ static uint8_t flash_read(device_t* dev, uint32_t addr)
              * On address 0, return SST Manufacturer's ID: 0xBF
              * On address 1, return the Device ID: 0xB6 (SST39SF020)
              */
-            if (addr == 0) return 0xBF;
-            if (addr == 1) return 0xB6;
+            if (addr == 0)
+                return 0xBF;
+            if (addr == 1)
+                return 0xB6;
             /* TODO: Verify on real hardware the behavior here */
             return 0xFF;
         default:
@@ -93,9 +91,8 @@ static uint8_t flash_read(device_t* dev, uint32_t addr)
     return f->data[addr];
 }
 
-static uint8_t flash_debug_read(device_t* dev, uint32_t addr)
-{
-    flash_t* f = (flash_t*) dev;
+static uint8_t flash_debug_read(device_t *dev, uint32_t addr) {
+    flash_t *f = (flash_t *)dev;
     if (addr >= f->size) {
         log_err_printf("[FLASH] Invalid debug read size: %08x\n", addr);
         return 0;
@@ -103,9 +100,8 @@ static uint8_t flash_debug_read(device_t* dev, uint32_t addr)
     return f->data[addr];
 }
 
-static void flash_write(device_t* dev, uint32_t addr, uint8_t data)
-{
-    flash_t* f = (flash_t*) dev;
+static void flash_write(device_t *dev, uint32_t addr, uint8_t data) {
+    flash_t *f = (flash_t *)dev;
 
     switch (f->state) {
         case STATE_IDLE:
@@ -141,7 +137,8 @@ static void flash_write(device_t* dev, uint32_t addr, uint8_t data)
         case STATE_PERFORM_WRITE:
             /* The NOR flash accepts writing a byte! Only bits that are 1 can be set to 0.
              * Write the value right now to simplify the logic after */
-            log_printf("[FLASH] Writing byte 0x%x (& %x = %x) @ 0x%x\n", data, f->data[addr], data & f->data[addr], addr);
+            log_printf("[FLASH] Writing byte 0x%x (& %x = %x) @ 0x%x\n", data, f->data[addr], data & f->data[addr],
+                       addr);
             f->data[addr] &= data;
             f->dirty = 1;
             /* The byte being written must have bit 7 flipped, DQ6 must be toggled at each read */
@@ -197,11 +194,9 @@ static void flash_write(device_t* dev, uint32_t addr, uint8_t data)
     }
 }
 
-
-int flash_init(flash_t* f)
-{
+flash_error_t flash_init(flash_t *f) {
     if (f == NULL) {
-        return 1;
+        return FLASH_ERR_SYNTAX;
     }
     /* Empty flash contains FF bytes*/
     memset(f, 0xFF, sizeof(*f));
@@ -213,16 +208,15 @@ int flash_init(flash_t* f)
     f->data = malloc(f->size);
     if (f->data == NULL) {
         log_err_printf("[FLASH] ERROR: could not allocate enough memory for the NOR flash\n");
-        return 2;
+        return FLASH_ERR_NO_MEMORY;
     }
 #endif
 
     device_init_mem_debug(DEVICE(f), "nor_flash_dev", flash_read, flash_write, flash_debug_read, f->size);
-    return 0;
+    return FLASH_ERR_OK;
 }
 
-void flash_tick(flash_t* flash, int elapsed_tstates)
-{
+void flash_tick(flash_t *flash, int elapsed_tstates) {
     if (flash->state == STATE_PERFORM_ERASE_DELAY || flash->state == STATE_PERFORM_WRITE_DELAY) {
         flash->ticks_remaining -= elapsed_tstates;
         if (flash->ticks_remaining <= 0) {
@@ -231,9 +225,8 @@ void flash_tick(flash_t* flash, int elapsed_tstates)
     }
 }
 
-static inline uint16_t flash_dereference(flash_t* flash, uint16_t os_addr, uint16_t data_addr)
-{
-    uint8_t* addr = &flash->data[os_addr + data_addr];
+static inline uint16_t flash_dereference(flash_t *flash, uint16_t os_addr, uint16_t data_addr) {
+    uint8_t *addr = &flash->data[os_addr + data_addr];
     return (addr[0]) | (addr[1] << 8);
 }
 
@@ -243,8 +236,7 @@ static inline uint16_t flash_dereference(flash_t* flash, uint16_t os_addr, uint1
  * @param flash Pointer to the flash isntance
  * @param out_config_addr Populated with the relative (to the OS) address of the config structure
  */
-static int flash_find_os_page(flash_t* flash, uint32_t* out_config_addr)
-{
+static int flash_find_os_page(flash_t *flash, uint32_t *out_config_addr) {
     const int config_offset = 4;
     const int zeal_computer_target = 1;
 
@@ -254,11 +246,11 @@ static int flash_find_os_page(flash_t* flash, uint32_t* out_config_addr)
         /* The config is always with the first 4KB but after the reset vectors, make sure the
          * first byte is referring to Zeal 8-bit computer (1) */
         if (config_addr >= 0x40 && config_addr < 0x1000 && flash->data[i + config_addr] == zeal_computer_target) {
-            log_printf("[FLASH] Zeal 8-bit OS found at offset 0x%x\n", (uint32_t) i);
+            log_printf("[FLASH] Zeal 8-bit OS found at offset 0x%x\n", (uint32_t)i);
             if (out_config_addr) {
                 *out_config_addr = config_addr;
             }
-            return (int) i;
+            return (int)i;
         }
     }
 
@@ -268,8 +260,7 @@ static int flash_find_os_page(flash_t* flash, uint32_t* out_config_addr)
 /**
  * @brief Check if the given path is a correct "init" path for Zeal 8-bit OS
  */
-static int flash_is_init_path(const char *s)
-{
+static int flash_is_init_path(const char *s) {
     if (s == NULL) {
         return 0;
     }
@@ -293,28 +284,26 @@ static int flash_is_init_path(const char *s)
     return 1;
 }
 
-
-static int flash_override_romdisk(flash_t* flash, const char* userprog_filename)
-{
-    int err = 0;
+static flash_error_t flash_override_romdisk(flash_t *flash, const char *userprog_filename) {
+    flash_error_t err = FLASH_ERR_OK;
     int romdisk_offset = 0;
     const int romdisk_header = 64;
     uint32_t config_addr = 0;
-    char* path = strdup(userprog_filename);
+    char *path = zstrdup(userprog_filename);
     if (path == NULL) {
         log_err_printf("[FLASH] No more memory!\n");
-        return -1;
+        return FLASH_ERR_NO_MEMORY;
     }
 
     /* Look for Zela 8-bit OS offset in the flash */
     const int zealos_offset = flash_find_os_page(flash, &config_addr);
     if (zealos_offset == -1) {
         log_err_printf("[FLASH] Could not find Zeal 8-bit OS in the given ROM. Cannot override init program.\n");
-        return 1;
+        return FLASH_ERR_NO_FILE;
     }
 
     /* Check if the parameter provides a romdisk address */
-    char* comma = strchr(path, ',');
+    char *comma = strchr(path, ',');
     if (comma) {
         /* Make the filename end before the address */
         *comma = 0;
@@ -330,30 +319,31 @@ static int flash_override_romdisk(flash_t* flash, const char* userprog_filename)
         romdisk_offset = zealos_offset + 0x4000;
     }
 
-    int fd = open(path, O_RDONLY);
-    if (fd < 0) {
+    FILE *file = fopen(path, "r");
+    if (file == NULL) {
         log_perror("[FLASH] Could not open user file: %s\n", path_sanitize(path));
-        err = fd;
+        err = FLASH_ERR_IO;
         goto ret;
     }
 
     /* Get the file size and make sure it's not too big for the flash */
-    struct stat st;
-    if (fstat(fd, &st)) {
-        log_perror("[FLASH] Could not stat user file: %s\n", path_sanitize(path));
-        err = -1;
+    // seek to get size
+    if (fseek(file, 0, SEEK_END) != 0) {
+        log_perror("[FLASH] Could not seek user file: %s\n", path_sanitize(path));
+        err = FLASH_ERR_IO;
         goto ret_close;
     }
-    const size_t size = st.st_size;
+    const size_t size = ftell(file);
+    rewind(file);
 
     if (size > (flash->size - romdisk_offset - romdisk_header)) {
         log_err_printf("[FLASH] User file is too big to fit in ROM\n");
-        err = -1;
+        err = FLASH_ERR_FILE_TOO_BIG;
         goto ret_close;
     }
 
     /* Generate a small header for the romdisk */
-    uint8_t* romdisk = flash->data + romdisk_offset;
+    uint8_t *romdisk = flash->data + romdisk_offset;
     /* FIXME: Made the assumption that the host CPU is little-endian */
     romdisk_entry_t entry = {
         /* Single entry in the romdisk */
@@ -364,7 +354,7 @@ static int flash_override_romdisk(flash_t* flash, const char* userprog_filename)
     };
     /* Find the name pointer of the init program from the configuration structure */
     const uint16_t os_init_addr = flash_dereference(flash, zealos_offset, config_addr + 0xa);
-    const char* os_init_path = (const char*) (&flash->data[zealos_offset + os_init_addr]);
+    const char *os_init_path = (const char *)(&flash->data[zealos_offset + os_init_addr]);
     if (flash_is_init_path(os_init_path)) {
         /* Escape the A:/ prefix */
         snprintf(entry.name, sizeof(entry.name), "%s", os_init_path + 3);
@@ -376,119 +366,126 @@ static int flash_override_romdisk(flash_t* flash, const char* userprog_filename)
     memcpy(romdisk, &entry, sizeof(entry));
 
     /* Read the data directly in flash */
-    int rd = read(fd, flash->data + romdisk_offset + romdisk_header, flash->size);
+    size_t rd = fread(romdisk + romdisk_header, 1, size, file);
     if (rd < 0) {
         log_perror("[FLASH] Could not read user file: %s\n", path);
-        err = rd;
+        err = FLASH_ERR_IO;
         goto ret_close;
     }
 
     log_printf("[FLASH] User program %s loaded successfully @ 0x%x\n", path_sanitize(path), romdisk_offset);
 
-    err = 0;
+    err = FLASH_ERR_OK;
     /* Fall-through */
 ret_close:
-    close(fd);
+    fclose(file);
 ret:
     free(path);
     return err;
 }
 
+static inline int faccess_open(const char *path) {
+    FILE *file = fopen(path, "r");
+    if (file == NULL) {
+        return -1;
+    }
+    fclose(file);
+    return 0;
+}
 
-int flash_load_from_file(flash_t* flash, const char* rom_filename, const char* userprog_filename)
-{
+flash_error_t flash_load_from_file(flash_t *flash, const char *rom_filename, const char *userprog_filename) {
     char rom_path[PATH_MAX];
 
     if (flash == NULL) {
-        return -1;
+        return FLASH_ERR_SYNTAX;
     }
 
     if (rom_filename != NULL) {
         snprintf(rom_path, sizeof(rom_path), "%s", rom_filename);
     } else {
-        const char* env_rom = getenv("ZEAL_NATIVE_ROM");
-        if (env_rom != NULL && env_rom[0] != '\0' && access(env_rom, F_OK) == 0) {
+        const char *env_rom = getenv("ZEAL_NATIVE_ROM");
+        if (env_rom != NULL && env_rom[0] != '\0' && faccess_open(env_rom) == 0) {
             // Environment variable exists and file is accessible
             snprintf(rom_path, sizeof(rom_path), "%s", env_rom);
         } else {
             // Check $HOME/.zeal8bit/roms/default.img
-            const char* config_dir = get_config_dir();
+            const char *config_dir = get_config_dir();
             if (config_dir != NULL) {
                 snprintf(rom_path, sizeof(rom_path), "%s/roms/default.img", config_dir);
                 log_printf("[FLASH] Trying to load %s\n", path_sanitize(rom_path));
-                if (access(rom_path, F_OK) != 0) {
+                if (faccess_open(rom_path) != 0) {
                     // Fallback to relative path
-                    const char* default_name = "roms/default.img";
+                    const char *default_name = "roms/default.img";
                     log_printf("[FLASH] Trying to load (install-dir) %s\n", default_name);
                     if (get_install_dir_file(rom_path, default_name) == 0) {
                         log_err_printf("[FLASH] Could not get %s\n", default_name);
-                        return -1;
+                        return FLASH_ERR_SYNTAX;
                     }
                 }
             } else {
                 // HOME not set, fallback to relative path
-                const char* default_name = "roms/default.img";
+                const char *default_name = "roms/default.img";
                 log_printf("[FLASH] Trying to load %s\n", default_name);
                 if (get_install_dir_file(rom_path, default_name) == 0) {
                     log_err_printf("[FLASH] Could not get (install-dir) %s\n", default_name);
-                    return -1;
+                    return FLASH_ERR_SYNTAX;
                 }
             }
         }
     }
 
-    int fd = open(rom_path, O_RDONLY);
-    if (fd < 0) {
-        log_perror("[FLASH] Could not open file to load");
-        return fd;
+    FILE *file = fopen(rom_path, "r");
+    if (file == NULL) {
+        log_err_printf("[FLASH] Could not open file to load");
+        return FLASH_ERR_IO;
     }
 
-    int rd = read(fd, flash->data, flash->size);
+    size_t rd = fread(flash->data, 1, flash->size, file);
     if (rd < 0) {
-        log_perror("[FLASH] Could not read file to load");
-        close(fd);
-        return rd;
+        log_err_printf("[FLASH] Could not read file to load");
+        fclose(file);
+        return FLASH_ERR_IO;
     }
 
     log_printf("[FLASH] %s loaded successfully\n", path_sanitize(rom_path));
 
-    close(fd);
+    fclose(file);
 
     /* Try to load the user program, if any */
-    if (userprog_filename != NULL ) {
+    if (userprog_filename != NULL) {
         return flash_override_romdisk(flash, userprog_filename);
     }
 
-    return 0;
+    return FLASH_ERR_OK;
 }
 
-
-int flash_save_to_file(flash_t* flash, const char* name)
-{
+flash_error_t flash_save_to_file(flash_t *flash, const char *name) {
     if (flash == NULL || name == NULL) {
-        return -1;
+        return FLASH_ERR_SYNTAX;
     }
 
     /* No change performed on the flash, nothing to write */
     if (flash->dirty == 0) {
-        return 0;
+        return FLASH_ERR_OK;
     }
 
-    int fd = open(name, O_WRONLY | O_TRUNC | O_CREAT, 0666);
-    if (fd < 0) {
-        log_perror("[FLASH] Could not create file to dump NOR flash");
-        return fd;
+    // int fd = open(name, O_WRONLY | O_TRUNC | O_CREAT, 0666);
+    FILE *file = fopen(name, "w");
+    if (file == NULL) {
+        log_err_printf("[FLASH] Could not create file to dump NOR flash");
+        return FLASH_ERR_IO;
     }
 
-    int wr = write(fd, flash->data, flash->size);
+    // int wr = write(fd, flash->data, flash->size);
+    size_t wr = fwrite(flash->data, 1, flash->size, file);
     if (wr < 0) {
-        log_perror("[FLASH] Could not dump to file");
-        close(fd);
-        return wr;
+        log_err_printf("[FLASH] Could not dump to file");
+        fclose(file);
+        return FLASH_ERR_IO;
     }
 
     log_printf("[FLASH] Dump saved to %s successfully\n", name);
 
-    close(fd);
-    return 0;
+    fclose(file);
+    return FLASH_ERR_OK;
 }

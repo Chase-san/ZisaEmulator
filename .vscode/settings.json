@@ -1,20 +1,24 @@
 {
-  "C_Cpp.default.includePath": ["${workspaceFolder}/include"],
-  "C_Cpp.clang_format_sortIncludes": false,
-  "C_Cpp.autoAddFileAssociations": false,
-  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
-  "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild",
-  "files.insertFinalNewline": true,
-  "editor.tabSize": 4,
-  "editor.insertSpaces": true,
-  "editor.detectIndentation": false,
-  "glsllint.additionalStageAssociations": {
-    ".fs": "frag",
-    ".glsl": "frag",
-    ".vs": "vert"
-  },
-  "glsllint.fallBackStage": "frag",
-  "files.associations": {
-    "*.build": "meson"
-  }
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/include"
+    ],
+    "C_Cpp.clang_format_sortIncludes": false,
+    "C_Cpp.autoAddFileAssociations": false,
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.configurationProvider": "mesonbuild.mesonbuild",
+    "files.insertFinalNewline": true,
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "glsllint.additionalStageAssociations": {
+        ".fs": "frag",
+        ".glsl": "frag",
+        ".vs": "vert"
+    },
+    "glsllint.fallBackStage": "frag",
+    "files.associations": {
+        "*.in": "text",
+        "*.h": "c"
+    },
+    "C_Cpp.intelliSenseEngine": "disabled"
 }

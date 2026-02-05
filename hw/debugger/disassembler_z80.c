@@ -1,11 +1,14 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
-#include <stdio.h>
 #include "debugger/debugger_types.h"
 
 const instr_data_t disassembled_z80_opcodes[256] = {

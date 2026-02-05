@@ -1,85 +1,100 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
-
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include "hw/zeal.h"
-#include "utils/log.h"
-#include "debugger/debugger_impl.h"
 #include "debugger/zeal_debugger.h"
 
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
 
-#define MAKE16(a,b)     ((a) << 8 | (b))
-#define MSB8(a)         (((a) >> 8) & 0xff)
-#define LSB8(a)         (((a) >> 0) & 0xff)
+#include "debugger/debugger_impl.h"
+#include "hw/zeal.h"
+#include "utils/log.h"
 
+#define MAKE16(a, b) ((a) << 8 | (b))
+#define MSB8(a) (((a) >> 8) & 0xff)
+#define LSB8(a) (((a) >> 0) & 0xff)
 
 /**
  * @brief Callback invoked when registers need to be read
  */
-static void zeal_debugger_get_regs(dbg_t *dbg, regs_t *regs)
-{
-    zeal_t* machine = (zeal_t*) (dbg->arg);
-    z80* cpu = &machine->cpu;
+static void zeal_debugger_get_regs(dbg_t *dbg, regs_t *regs) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
+    z80 *cpu = &machine->cpu;
 
-    *regs = (regs_t) {
-        .pc  = cpu->pc,
-        .sp  = cpu->sp,
-        .a   = cpu->a, .f   = z80_get_f(cpu),
-        .b   = cpu->b, .c   = cpu->c,
-        .d   = cpu->d, .e   = cpu->e,
-        .h   = cpu->h, .l   = cpu->l,
-        .a_  = cpu->a_, .f_ = cpu->f_,
-        .b_  = cpu->b_, .c_ = cpu->c_,
-        .d_  = cpu->d_, .e_ = cpu->e_,
-        .h_  = cpu->h_, .l_ = cpu->l_,
-        .i   = cpu->i, .r   = cpu->r,
-        .ix  = cpu->ix,
-        .iy  = cpu->iy,
+    *regs = (regs_t){
+        .pc = cpu->pc,
+        .sp = cpu->sp,
+        .a = cpu->a,
+        .f = z80_get_f(cpu),
+        .b = cpu->b,
+        .c = cpu->c,
+        .d = cpu->d,
+        .e = cpu->e,
+        .h = cpu->h,
+        .l = cpu->l,
+        .a_ = cpu->a_,
+        .f_ = cpu->f_,
+        .b_ = cpu->b_,
+        .c_ = cpu->c_,
+        .d_ = cpu->d_,
+        .e_ = cpu->e_,
+        .h_ = cpu->h_,
+        .l_ = cpu->l_,
+        .i = cpu->i,
+        .r = cpu->r,
+        .ix = cpu->ix,
+        .iy = cpu->iy,
     };
 }
 
-
-static void zeal_debugger_set_regs(dbg_t *dbg, regs_t *regs)
-{
-    zeal_t* machine = (zeal_t*) (dbg->arg);
-    z80* cpu = &machine->cpu;
+static void zeal_debugger_set_regs(dbg_t *dbg, regs_t *regs) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
+    z80 *cpu = &machine->cpu;
 
     cpu->sp = regs->sp;
     cpu->pc = regs->pc;
-    cpu->a  = regs->a;  z80_set_f(cpu, regs->f);
-    cpu->b  = regs->b;  cpu->c  = regs->c;
-    cpu->d  = regs->d;  cpu->e  = regs->e;
-    cpu->h  = regs->h;  cpu->l  = regs->l;
-    cpu->a_ = regs->a;  cpu->f_ = regs->f_;
-    cpu->b_ = regs->b_; cpu->c_ = regs->c_;
-    cpu->d_ = regs->d_; cpu->e_ = regs->e_;
-    cpu->h_ = regs->h_; cpu->l_ = regs->l_;
-    cpu->i  = regs->i;  cpu->r  = regs->r;
+    cpu->a = regs->a;
+    z80_set_f(cpu, regs->f);
+    cpu->b = regs->b;
+    cpu->c = regs->c;
+    cpu->d = regs->d;
+    cpu->e = regs->e;
+    cpu->h = regs->h;
+    cpu->l = regs->l;
+    cpu->a_ = regs->a;
+    cpu->f_ = regs->f_;
+    cpu->b_ = regs->b_;
+    cpu->c_ = regs->c_;
+    cpu->d_ = regs->d_;
+    cpu->e_ = regs->e_;
+    cpu->h_ = regs->h_;
+    cpu->l_ = regs->l_;
+    cpu->i = regs->i;
+    cpu->r = regs->r;
     cpu->ix = regs->ix;
     cpu->iy = regs->iy;
 }
 
-
-
 /**
  * @brief Callback invoked memory needs to be read
  */
-static int zeal_debugger_get_mem(dbg_t *dbg, hwaddr addr, int len, uint8_t *val)
-{
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static int zeal_debugger_get_mem(dbg_t *dbg, hwaddr addr, int len, uint8_t *val) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
 
     /* If upper bit in 32-bit address is set, interpret it as a physical address */
     if (addr & 0x80000000) {
         log_printf("TODO: MEM PHYSICAL ADDRESS READ: %08x\n", addr);
     } else if (addr <= 0xffff) {
         for (int i = 0; i < len; i++) {
-            val[i] = machine->dbg_read_memory(machine, (uint16_t) (addr + i));
+            val[i] = machine->dbg_read_memory(machine, (uint16_t)(addr + i));
         }
     } else {
         // Invalid address
@@ -89,20 +104,18 @@ static int zeal_debugger_get_mem(dbg_t *dbg, hwaddr addr, int len, uint8_t *val)
     return 0;
 }
 
-
 /**
  * @brief Callback invoked when memory needs to be modified
  */
-static int zeal_debugger_set_mem(dbg_t *dbg, hwaddr addr, int len, uint8_t *val)
-{
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static int zeal_debugger_set_mem(dbg_t *dbg, hwaddr addr, int len, uint8_t *val) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
 
     /* If upper bit in 32-bit address is set, interpret it as a physical address */
     if (addr & 0x80000000) {
         log_printf("TODO: PHYSICAL ADDRESS WRITE\n");
     } else if (addr <= 0xffff) {
         for (int i = 0; i < len; i++) {
-            machine->cpu.write_byte(machine, (uint16_t) (addr + i), val[i]);
+            machine->cpu.write_byte(machine, (uint16_t)(addr + i), val[i]);
         }
     } else {
         // Invalid address
@@ -112,70 +125,66 @@ static int zeal_debugger_set_mem(dbg_t *dbg, hwaddr addr, int len, uint8_t *val)
     return 0;
 }
 
-
-static void zeal_debugger_pause_cb(dbg_t* dbg) {
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static void zeal_debugger_pause_cb(dbg_t *dbg) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
     machine->dbg_state = ST_PAUSED;
 }
 
-static bool zeal_debugger_is_paused_cb(dbg_t* dbg) {
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static bool zeal_debugger_is_paused_cb(dbg_t *dbg) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
     /* To prevent the view from blinking (because of pause/continue/pause/...), consider that
      * a step request is also a pause. */
     return machine->dbg_state == ST_PAUSED || machine->dbg_state == ST_REQ_STEP;
 }
 
-
-static void zeal_debugger_continue_cb(dbg_t* dbg) {
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static void zeal_debugger_continue_cb(dbg_t *dbg) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
     machine->dbg_state = ST_RUNNING;
 }
 
-static void zeal_debugger_reset_cb(dbg_t* dbg) {
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static void zeal_debugger_reset_cb(dbg_t *dbg) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
     log_printf("[SYSTEM] Reset\n");
     zeal_reset(machine);
 }
 
-
-static void zeal_debugger_step_cb(dbg_t* dbg) {
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static void zeal_debugger_step_cb(dbg_t *dbg) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
     machine->dbg_state = ST_REQ_STEP;
 }
 
-
-static void zeal_debugger_step_over_cb(dbg_t* dbg) {
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static void zeal_debugger_step_over_cb(dbg_t *dbg) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
     machine->dbg_state = ST_REQ_STEP_OVER;
 }
 
-static void zeal_debugger_breakpoint_cb(dbg_t* dbg) {
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static void zeal_debugger_breakpoint_cb(dbg_t *dbg) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
 
-    if(machine->dbg_state != ST_RUNNING) {
+    if (machine->dbg_state != ST_RUNNING) {
         debugger_toggle_breakpoint(dbg, machine->cpu.pc);
     }
 }
 
-static bool zeal_custom_operations(dbg_t* dbg, int op, void* arg)
-{
-    zeal_t* machine = (zeal_t*) (dbg->arg);
+static bool zeal_custom_operations(dbg_t *dbg, int op, void *arg) {
+    zeal_t *machine = (zeal_t *)(dbg->arg);
 
     if (op == ZEAL_DBG_OP_GET_MMU) {
-        _Static_assert(MMU_PAGES_COUNT == ZEAL_DBG_MMU_PAGES, "MMU debug info and emulated MMU must have the same number of pages.");
+        _Static_assert(MMU_PAGES_COUNT == ZEAL_DBG_MMU_PAGES,
+                       "MMU debug info and emulated MMU must have the same number of pages.");
 
-        dbg_mmu_t* mmu = (dbg_mmu_t*) arg;
+        dbg_mmu_t *mmu = (dbg_mmu_t *)arg;
         if (arg == NULL) {
             log_err_printf("[DEBUGGER] Invalid NULL argument for operation ZEAL_DBG_OP_GET_MMU\n");
             return false;
         }
         for (int i = 0; i < ZEAL_DBG_MMU_PAGES; i++) {
-            const int virt  = i * 16*1024;
+            const int virt = i * 16 * 1024;
             const int value = machine->mmu.pages[i];
 
-            mmu->entries[i] = (dbg_mmu_entry_t) {
+            mmu->entries[i] = (dbg_mmu_entry_t){
                 .virt_addr = virt,
-                .value     = value,
+                .value = value,
                 .phys_addr = mmu_get_phys_addr(&machine->mmu, virt),
             };
             /* Get the device being mapped there */
@@ -183,7 +192,7 @@ static bool zeal_custom_operations(dbg_t* dbg, int op, void* arg)
                 log_err_printf("[DEBUGGER] MMU value cannot exceed total memory space\n");
                 return false;
             }
-            const device_t* mapped_dev = machine->mem_mapping[value].dev;
+            const device_t *mapped_dev = machine->mem_mapping[value].dev;
             if (mapped_dev != NULL) {
                 mmu->entries[i].device = mapped_dev->name;
             }
@@ -205,20 +214,12 @@ extern const instr_data_t disassembled_cb_opcodes[256];
 extern const instr_data_t disassembled_ed_opcodes[256];
 extern const instr_data_t disassembled_ixiy_opcodes[256];
 
-
-static const instr_data_t* process_ed_instr(uint8_t snd)
-{
+static const instr_data_t *process_ed_instr(uint8_t snd) {
     static char fmt[2][64];
-    static instr_data_t opcode = {
-        .fmt = fmt[0],
-        .fmt_lab = fmt[1],
-        .size = 4,
-        .label = true
-    };
-    const char* regs_16[] = { "bc", "de", "hl", "sp"};
+    static instr_data_t opcode = {.fmt = fmt[0], .fmt_lab = fmt[1], .size = 4, .label = true};
+    const char *regs_16[] = {"bc", "de", "hl", "sp"};
     const int reg_idx = (snd >> 4) & 3;
-    const char* pair = regs_16[reg_idx];
-
+    const char *pair = regs_16[reg_idx];
 
     if ((snd & 0x4B) == 0x4B) {
         /* Special case for LD dd, (nn) */
@@ -233,17 +234,22 @@ static const instr_data_t* process_ed_instr(uint8_t snd)
     return &opcode;
 }
 
-
-static const char* processes_ixiy_cb(uint8_t fourth)
-{
-    switch (fourth){
-        case 0x06: return "rlc (i%c%+d)";
-        case 0x0e: return "rrc (i%c%+d)";
-        case 0x16: return "rl  (i%c%+d)";
-        case 0x1e: return "rr  (i%c%+d)";
-        case 0x26: return "sla (i%c%+d)";
-        case 0x2e: return "sra (i%c%+d)";
-        case 0x3e: return "srl (i%c%+d)";
+static const char *processes_ixiy_cb(uint8_t fourth) {
+    switch (fourth) {
+        case 0x06:
+            return "rlc (i%c%+d)";
+        case 0x0e:
+            return "rrc (i%c%+d)";
+        case 0x16:
+            return "rl  (i%c%+d)";
+        case 0x1e:
+            return "rr  (i%c%+d)";
+        case 0x26:
+            return "sla (i%c%+d)";
+        case 0x2e:
+            return "sra (i%c%+d)";
+        case 0x3e:
+            return "srl (i%c%+d)";
         default: {
             static char fmt[] = "bit 0,(i%c%+d)";
             /* Set the bit value */
@@ -267,22 +273,20 @@ static const char* processes_ixiy_cb(uint8_t fourth)
     }
 }
 
-
-static int process_ixiy_opcodes(const uint8_t mem[4], dbg_instr_t* instr)
-{
+static int process_ixiy_opcodes(const uint8_t mem[4], dbg_instr_t *instr) {
     /* Choose between IX and IY register */
     const char reg_letter = (mem[0] == 0xdd) ? 'x' : 'y';
-    const instr_data_t* opcode = disassembled_ixiy_opcodes + mem[1];
+    const instr_data_t *opcode = disassembled_ixiy_opcodes + mem[1];
 
     /* special case for 0xCB and 16-bit LD instructions */
     if (opcode->fmt == NULL) {
         if (mem[1] == 0xCB) {
-            const char* fmt = processes_ixiy_cb(mem[3]);
+            const char *fmt = processes_ixiy_cb(mem[3]);
             snprintf(instr->instruction, sizeof(instr->instruction), fmt, reg_letter, mem[2]);
         } else if ((mem[1] & 0xf8) == 0x70) {
             /* Special case because the opcode contains the parameter */
-            const char  reg_idx[] = { 'b', 'c', 'd', 'e', 'h', 'l', '?', 'a' };
-            const char* fmt = "ld     (i%c%+d),%c";
+            const char reg_idx[] = {'b', 'c', 'd', 'e', 'h', 'l', '?', 'a'};
+            const char *fmt = "ld     (i%c%+d),%c";
             snprintf(instr->instruction, sizeof(instr->instruction), fmt, reg_letter, mem[2], (reg_idx[mem[1] & 0x7]));
             return 3;
         }
@@ -310,10 +314,8 @@ static int process_ixiy_opcodes(const uint8_t mem[4], dbg_instr_t* instr)
     return opcode->size;
 }
 
-
-static int zeal_debugger_disassemble_address(dbg_t *dbg, hwaddr address, dbg_instr_t* instr)
-{
-    const char* label = NULL;
+static int zeal_debugger_disassemble_address(dbg_t *dbg, hwaddr address, dbg_instr_t *instr) {
+    const char *label = NULL;
     uint8_t mem[4];
 
     if (instr == NULL) {
@@ -337,7 +339,7 @@ static int zeal_debugger_disassemble_address(dbg_t *dbg, hwaddr address, dbg_ins
     const bool is_fd = (mem[0] == 0xfd);
     const bool is_dd = (mem[0] == 0xdd);
     const size_t max_len = sizeof(instr->instruction);
-    const instr_data_t* opcode;
+    const instr_data_t *opcode;
 
     if (is_ed) {
         opcode = disassembled_ed_opcodes + mem[1];
@@ -393,12 +395,10 @@ static int zeal_debugger_disassemble_address(dbg_t *dbg, hwaddr address, dbg_ins
     return opcode->size;
 }
 
-
 /**
  * @brief Initialize the debug-related structure in the given Zeal machine
  */
-int zeal_debugger_init(zeal_t* machine, dbg_t* dbg)
-{
+int zeal_debugger_init(zeal_t *machine, dbg_t *dbg) {
     if (machine == NULL || dbg == NULL) {
         return -1;
     }

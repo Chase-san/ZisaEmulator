@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -64,7 +68,7 @@ int zvb_spi_load_tf_image(zvb_spi_t* spi, const char* filename)
     /* Open it in both read and write */
     spi->tf.img = fopen(filename, "r+");
     if (spi->tf.img == NULL) {
-        log_perror("[TF] Could not open TF Card image");
+        log_err_printf("[TF] Could not open TF Card image");
         return 1;
     }
 
@@ -126,9 +130,16 @@ void zvb_spi_write(zvb_spi_t* spi, uint32_t addr, uint8_t value)
             spi->ram_wr.data[index] = value;
             spi->ram_wr.idx = (index + 1) % SPI_RAM_LEN;
             break;
-        case SPI_REG_RAM_FROM ... SPI_REG_RAM_TO:
-            assert(addr - SPI_REG_RAM_FROM < SPI_RAM_LEN);
-            spi->ram_wr.data[addr - SPI_REG_RAM_FROM] = value;
+        case SPI_REG_RAM_A:
+        case SPI_REG_RAM_B:
+        case SPI_REG_RAM_C:
+        case SPI_REG_RAM_D:
+        case SPI_REG_RAM_E:
+        case SPI_REG_RAM_F:
+        case SPI_REG_RAM_G:
+        case SPI_REG_RAM_H:
+            assert(addr - SPI_REG_RAM_A < SPI_RAM_LEN);
+            spi->ram_wr.data[addr - SPI_REG_RAM_A] = value;
             break;
         default:
             break;
@@ -155,9 +166,16 @@ uint8_t zvb_spi_read(zvb_spi_t* spi, uint32_t addr)
             const uint8_t data = spi->ram_rd.data[spi->ram_rd.idx];
             spi->ram_rd.idx = (spi->ram_rd.idx + 1) % SPI_RAM_LEN;
             return data;
-        case SPI_REG_RAM_FROM ... SPI_REG_RAM_TO:
-            assert(addr - SPI_REG_RAM_FROM < SPI_RAM_LEN);
-            return spi->ram_rd.data[addr - SPI_REG_RAM_FROM];
+        case SPI_REG_RAM_A:
+        case SPI_REG_RAM_B:
+        case SPI_REG_RAM_C:
+        case SPI_REG_RAM_D:
+        case SPI_REG_RAM_E:
+        case SPI_REG_RAM_F:
+        case SPI_REG_RAM_G:
+        case SPI_REG_RAM_H:
+            assert(addr - SPI_REG_RAM_A < SPI_RAM_LEN);
+            return spi->ram_rd.data[addr - SPI_REG_RAM_A];
     }
     return 0;
 }
@@ -278,7 +296,7 @@ static void zvb_tf_process_command(zvb_spi_t* spi, uint32_t command, uint32_t pa
                 /* TODO: check the size of the file against the block number */
                 const uint32_t offset = param * TF_BLK_SIZE;
                 if (fseek(tf->img, offset, SEEK_SET) < 0) {
-                    log_perror("[TF] Could not seek into image for reading");
+                    log_err_printf("[TF] Could not seek into image for reading");
                     r1.param_err = 1;
                     zvb_r1_response(tf, r1.raw);
                     return;
@@ -314,7 +332,7 @@ static void zvb_tf_process_command(zvb_spi_t* spi, uint32_t command, uint32_t pa
                 log_printf("[TF] Write block, offset: 0x%lx (sector: %x)\n", offset, param);
 #endif
                 if (fseek(tf->img, offset, SEEK_SET) < 0) {
-                    log_perror("[TF] Could not seek into image for writing");
+                    log_err_printf("[TF] Could not seek into image for writing");
                     r1.param_err = 1;
                     zvb_r1_response(tf, r1.raw);
                     return;
@@ -471,8 +489,8 @@ static void zvb_tf_start(zvb_spi_t* spi)
     for (i = 0; i < length; i++) {
         /* Fill the OUT array at the same time */
         spi->ram_rd.data[i] = zvb_tf_next_byte(&spi->tf);
-        /* Highest bits must be 0b01xx */
-        if ((spi->ram_wr.data[i] >> 6) == 0b01) {
+        /* Highest bits must be 0x01 */
+        if ((spi->ram_wr.data[i] >> 6) == 0x01) {
             break;
         }
     }

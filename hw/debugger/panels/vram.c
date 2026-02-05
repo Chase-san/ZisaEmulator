@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -14,7 +18,6 @@
 #include <string.h>
 #include "ui/raylib-nuklear.h"
 #include "debugger/debugger_types.h"
-#include "debugger/debugger.h"
 #include "debugger/debugger_ui.h"
 
 #ifndef MAX

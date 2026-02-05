@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -11,6 +15,7 @@
 #include <stdbool.h>
 #include "debugger/debugger.h"
 #include "utils/log.h"
+#include "utils/helpers.h"
 
 #define MAX_LINE_LENGTH     256
 
@@ -95,7 +100,7 @@ void debugger_set_breakpoints_str(dbg_t *dbg, const char* list)
     }
 
     /* Copy the string to be able to odify it */
-    char *copy = strdup(list);
+    char *copy = zstrdup(list);
     if (!copy) {
         return;
     }
@@ -362,13 +367,13 @@ void debugger_handle_event(dbg_t *dbg, debug_event_t event)
 bool debugger_load_symbols(dbg_t *dbg, const char *filename)
 {
     if (!dbg || !filename) {
-        log_perror("[MAP] No debugger or filename");
+        log_err_printf("[MAP] No debugger or filename");
         return false;
     }
 
     FILE *file = fopen(filename, "r");
     if (!file) {
-        log_perror("[MAP] Could not open file to load");
+        log_err_printf("[MAP] Could not open file to load");
         return false;
     }
 
@@ -383,7 +388,7 @@ bool debugger_load_symbols(dbg_t *dbg, const char *filename)
         /* Parse the line and ensure it contains "addr" */
         if (sscanf(line, "%s = $%x ; %s,", name, &address, type) == 3 && strcmp(type, "addr,") == 0 ) {
             /* Store the symbol */
-            current->array[current->count].name = strdup(name);
+            current->array[current->count].name = zstrdup(name);
             current->array[current->count].addr = (hwaddr)address;
             current->count++;
 
@@ -392,7 +397,7 @@ bool debugger_load_symbols(dbg_t *dbg, const char *filename)
                 current->next = (symbols_t *)calloc(1, sizeof(symbols_t));
                 if (!current->next) {
                     fclose(file);
-                    log_perror("[MAP] Memory allocation failed");
+                    log_err_printf("[MAP] Memory allocation failed");
                     return false;  // Memory allocation failed
                 }
                 current = current->next;

@@ -1,0 +1,19 @@
+---
+Language: Cpp
+BasedOnStyle: Google
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: Empty
+AllowShortLoopsOnASingleLine: true
+BreakBeforeBraces: Attach
+ColumnLimit: 120
+FixNamespaceComments: true
+IndentWidth: 4
+MaxEmptyLinesToKeep: 1
+PointerAlignment: Right
+SeparateDefinitionBlocks: Always
+SpaceAfterCStyleCast: false
+UseTab: Never

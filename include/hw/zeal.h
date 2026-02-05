@@ -1,33 +1,37 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
-
 
 #pragma once
 
-#include <stdint.h>
 #include <stdbool.h>
-#include "raylib.h"
-#include "hw/z80.h"
-#include "hw/device.h"
-#include "hw/mmu.h"
-#include "hw/flash.h"
-#include "hw/ram.h"
-#include "hw/zvb/zvb.h"
-#include "hw/pio.h"
-#include "hw/i2c.h"
-#include "hw/keyboard.h"
-#include "hw/uart.h"
-#include "hw/hostfs.h"
-#include "hw/compactflash.h"
-#include "utils/config.h"
-#include "debugger/debugger_ui.h"
+#include <stdint.h>
 
+#include "hw/compactflash.h"
+#include "hw/device.h"
+#include "hw/flash.h"
 #include "hw/i2c.h"
-#include "hw/i2c/ds1307.h"
 #include "hw/i2c/at24c512.h"
+#include "hw/i2c/ds1307.h"
+#include "hw/keyboard.h"
+#include "hw/mmu.h"
+#include "hw/pio.h"
+#include "hw/ram.h"
+#include "hw/uart.h"
+#include "hw/z80.h"
+#include "hw/zvb/zvb.h"
+#include "raylib.h"
+
+#ifdef CONFIG_ENABLE_DEBUGGER
+#include "debugger/debugger_types.h"
+#include "debugger/debugger_ui.h"
+#endif
 
 typedef uint8_t dev_idx_t;
 
@@ -43,29 +47,26 @@ typedef uint8_t dev_idx_t;
  */
 #define IO_MAPPING_SIZE 256
 
-
 /**
  * @brief Maximum number of devices that can be attached to the computer. This is purely
  * arbitrary and not a hardware limitation. The goal is to reduce the footprint in memory.
  */
 #define ZEAL_MAX_DEVICE_COUNT 32
 
-
 /**
  * @brief Macros related to RayLib window
  */
-#define WIN_VISIBLE_WIDTH   (ZVB_MAX_RES_WIDTH  * 2)
-#define WIN_VISIBLE_HEIGHT  (ZVB_MAX_RES_HEIGHT * 2)
-#define WIN_NAME            "Zeal 8-bit Computer"
-#define WIN_LOG_LEVEL       LOG_WARNING
-
+#define WIN_VISIBLE_WIDTH (ZVB_MAX_RES_WIDTH * 2)
+#define WIN_VISIBLE_HEIGHT (ZVB_MAX_RES_HEIGHT * 2)
+#define WIN_NAME "Zeal 8-bit Computer"
+#define WIN_LOG_LEVEL LOG_WARNING
 
 /**
  * @brief Each device needs to be associated to the physical page where its mapping starts.
  * Since we have at most 256 pages, we can use a single byte for that
  */
 typedef struct {
-    device_t* dev;
+    device_t *dev;
     int page_from;
 } map_entry_t;
 
@@ -74,75 +75,72 @@ struct zeal_t {
     map_entry_t io_mapping[IO_MAPPING_SIZE];
     map_entry_t mem_mapping[MEM_MAPPING_SIZE];
 
-    z80     cpu;
-    mmu_t   mmu;
+    z80 cpu;
+    mmu_t mmu;
     flash_t rom;
-    ram_t   ram;
-    zvb_t   zvb;
-    pio_t   pio;
+    ram_t ram;
+    zvb_t zvb;
+    pio_t pio;
     keyboard_t keyboard;
     uart_t uart;
     /* I2C related */
-    i2c_t    i2c_bus;
+    i2c_t i2c_bus;
     ds1307_t rtc;
     at24c512_t eeprom;
     compactflash_t compactflash;
 
     /* Renderer */
-    RenderTexture2D  zvb_out;
+    RenderTexture2D zvb_out;
     bool headless;
     bool should_exit;
 
-    /* Misc features */
-    zeal_hostfs_t hostfs;
-
     /* Debugger related */
 #if CONFIG_ENABLE_DEBUGGER
-    bool             dbg_enabled;
-    dbg_state_t      dbg_state;
-    dbg_t            dbg;
-    struct dbg_ui_t* dbg_ui;
-    uint8_t        (*dbg_read_memory)(struct zeal_t*, hwaddr addr);
+    bool dbg_enabled;
+    dbg_state_t dbg_state;
+    dbg_t dbg;
+    struct dbg_ui_t *dbg_ui;
+    uint8_t (*dbg_read_memory)(struct zeal_t *, hwaddr addr);
 #endif
 };
 
 typedef struct zeal_t zeal_t;
 
-
 /**
  * @brief Initialize the Zeal 8-bit Computer virtual machine with optional parameters
  */
-int zeal_init(zeal_t* machine);
-
+int zeal_init(zeal_t *machine);
 
 /**
  * @brief Reset the Zeal 8-bit Computer
  *
  * Resets the CPU and ZVB
  */
-int zeal_reset(zeal_t* machine);
+int zeal_reset(zeal_t *machine);
 
 /**
  * @brief Run the virtual machine, won't return until the emulation is terminated
  */
-int zeal_run(zeal_t* machine);
+int zeal_run(zeal_t *machine);
 
 /**
  * @brief Stop the virtual machine, and call CloseWindow()
  */
-void zeal_exit(zeal_t* machine);
+void zeal_exit(zeal_t *machine);
 
+#ifdef CONFIG_ENABLE_DEBUGGER
 /**
  * @brief Enable Zeal Debugger view
  */
-int zeal_debug_enable(zeal_t* machine);
+int zeal_debug_enable(zeal_t *machine);
 
 /**
  * @brief Disable Zeal Debugger view
  */
-int zeal_debug_disable(zeal_t* machine);
+int zeal_debug_disable(zeal_t *machine);
 
 /**
  * @brief Toggle the Zeal Debugger view
  */
 void zeal_debug_toggle(dbg_t *dbg);
+#endif // CONFIG_ENABLE_DEBUGGER

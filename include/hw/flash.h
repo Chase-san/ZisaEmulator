@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -16,6 +20,17 @@
 #else
 #define NOR_FLASH_SIZE_KB (NOR_FLASH_SIZE_KB_MAX / 2)
 #endif
+
+enum flash_error {
+    FLASH_ERR_OK = 0,
+    FLASH_ERR_NO_FILE = 1,
+    FLASH_ERR_FILE_TOO_BIG = 2,
+    FLASH_ERR_NO_MEMORY = 3,
+    FLASH_ERR_IO = 4,
+    FLASH_ERR_SYNTAX = 5,
+};
+typedef enum flash_error flash_error_t;
+
 
 /**
  * @file Emulation for the NOR Flash (SST39)
@@ -39,10 +54,10 @@ typedef struct {
 } flash_t;
 
 
-int flash_init(flash_t* flash);
+flash_error_t flash_init(flash_t* flash);
 
 void flash_tick(flash_t* flash, int elapsed_tstates);
 
-int flash_load_from_file(flash_t* flash, const char* rom_filename, const char* userprog_filename);
+flash_error_t flash_load_from_file(flash_t* flash, const char* rom_filename, const char* userprog_filename);
 
-int flash_save_to_file(flash_t* flash, const char* name);
+flash_error_t flash_save_to_file(flash_t* flash, const char* name);
