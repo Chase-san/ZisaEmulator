@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "debugger/debugger_impl.h"
+#include "debugger/debugger.h"
 #include "hw/zeal.h"
 #include "utils/log.h"
 

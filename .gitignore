@@ -1,8 +1,9 @@
 build/
 tmp/
-*.elf
-roms/*
+roms/
 *.ini
 .vscode/
 .cache/
 bin/
+*.exe
+*.elf

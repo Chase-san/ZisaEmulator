@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "debugger/debugger.h"
 #include "utils/config.h"
 #include "utils/log.h"
 

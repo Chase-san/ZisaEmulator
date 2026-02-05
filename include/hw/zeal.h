@@ -29,7 +29,7 @@
 #include "raylib.h"
 
 #ifdef CONFIG_ENABLE_DEBUGGER
-#include "debugger/debugger_types.h"
+#include "debugger/debugger_impl.h" // IWYU pragma: keep
 #include "debugger/debugger_ui.h"
 #endif
 

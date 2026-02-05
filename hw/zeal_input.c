@@ -1,7 +1,11 @@
 /*
  * SPDX-FileCopyrightText: 2025 Zeal 8-bit Computer <contact@zeal8bit.com>; David Higgins <zoul0813@me.com>
  *
+ * SPDX-FileCopyrightText: 2026 Robert Maupin <chasesan@gmail.com>
+ *
  * SPDX-License-Identifier: Apache-2.0
+ *
+ * SPDX-FileContributor: Modified by Robert Maupin 2026
  */
 
 
@@ -9,9 +13,9 @@
 #include <stdbool.h>
 #include "raylib.h"
 #include "utils/config.h"
+#include "debugger/debugger.h"
 #include "debugger/debugger_ui.h"
 #include "hw/zeal.h"
-#include "utils/log.h"
 
 typedef struct {
     bool pressed; // TODO: support key repeat with GetTime()??
